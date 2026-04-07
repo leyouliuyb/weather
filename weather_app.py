@@ -1,44 +1,69 @@
 import streamlit as st
 import requests
-from datetime import datetime
 
-# 标题
-st.title("🌤️ 江苏南京 7天真实天气预报")
+# 页面设置
+st.set_page_config(page_title="江苏天气预报", page_icon="🌤️", layout="wide")
+st.title("🌤️ 江苏省 7天天气预报")
+st.subheader("支持全省城市 · 自动获取实时天气")
 
-# 获取天气数据
-def get_weather():
+# 江苏城市列表
+jiangsu_cities = {
+    "南京": "Nanjing",
+    "苏州": "Suzhou",
+    "无锡": "Wuxi",
+    "常州": "Changzhou",
+    "镇江": "Zhenjiang",
+    "扬州": "Yangzhou",
+    "泰州": "Taizhou",
+    "南通": "Nantong",
+    "盐城": "Yancheng",
+    "淮安": "Huai'an",
+    "连云港": "Lianyungang",
+    "徐州": "Xuzhou",
+    "宿迁": "Suqian"
+}
+
+# 城市选择框
+selected_city = st.selectbox("选择城市", list(jiangsu_cities.keys()))
+city_en = jiangsu_cities[selected_city]
+
+# 获取天气
+def get_weather(city):
     try:
-        url = "https://wttr.in/Nanjing?format=j1"
+        url = f"https://wttr.in/{city}?format=j1"
         res = requests.get(url, timeout=10)
         data = res.json()
-        
-        days = []
-        max_t = []
-        min_t = []
-        
+        weather_list = []
+
         for i in range(7):
-            day = data['weather'][i]
-            days.append(f"第{i+1}天")
-            max_t.append(int(day['maxtempC']))
-            min_t.append(int(day['mintempC']))
-            
-        return days, max_t, min_t
+            day = data["weather"][i]
+            date = day["date"]
+            max_c = int(day["maxtempC"])
+            min_c = int(day["mintempC"])
+            desc = day["weatherDesc"][0]["value"]
+            weather_list.append([date, max_c, min_c, desc])
+
+        return weather_list
+
     except:
-        return ["1","2","3","4","5","6","7"], [26,28,27,29,30,27,26], [18,19,18,20,21,19,18]
+        return [["无网络",26,18,"晴"],["无网络",27,19,"多云"]]*4
 
-days, max_t, min_t = get_weather()
+# 拿到数据
+weather_data = get_weather(city_en)
 
-# 展示数据
-st.subheader("📊 江苏南京近7天温度")
-for i in range(7):
-    st.write(f"{days[i]} ▶ 最高 {max_t[i]}℃ | 最低 {min_t[i]}℃")
+# 展示
+st.subheader(f"📊 {selected_city} 近7天天气")
+for item in weather_data:
+    date, max_c, min_c, desc = item
+    st.success(f"📅 {date} | 🌡 {max_c}℃ ~ {min_c}℃ | ☁️ {desc}")
 
-# 气温趋势图
+# 图表
 st.subheader("📈 气温趋势图")
-chart_data = {
-    "最高温": max_t,
-    "最低温": min_t
-}
+max_list = [x[1] for x in weather_data]
+min_list = [x[2] for x in weather_data]
+chart_data = {"最高温":max_list, "最低温":min_list}
 st.line_chart(chart_data)
 
-st.write("✅ 程序运行成功 | 📱 手机/电脑通用 | 免费云服务")
+# 底部信息
+st.write("---")
+st.write("✅ 数据来源：wttr.in ｜ 📱 手机/电脑通用 ｜ 🌍 免费云服务")
